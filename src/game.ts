@@ -1,5 +1,5 @@
 import { Application } from 'pixi.js'
-import { Grid } from './grid'
+import { Grid } from './grid/grid'
 
 export class Game {
   app: Application

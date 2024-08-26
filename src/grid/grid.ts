@@ -12,14 +12,7 @@ export class Grid {
   constructor(app: Application) {
     this.app = app;
     this.generateGrid()
-    this.defineOriginCell({
-      row: 9,
-      column: 15
-    })
-    this.defineDestinationCell({
-      row: 1,
-      column: 3
-    })
+
   }
 
   private generateGrid() {
@@ -52,7 +45,7 @@ export class Grid {
   }) {
     const currentOriginCell = this.originCell
     if (currentOriginCell) {
-      currentOriginCell.changeTypeTo('default')
+      currentOriginCell.changeTypeTo('path')
     }
 
     const cell = this.cells[row][column]
@@ -69,7 +62,7 @@ export class Grid {
   }) {
     const currentDestinationCell = this.destinationCell
     if (currentDestinationCell) {
-      currentDestinationCell.changeTypeTo('default')
+      currentDestinationCell.changeTypeTo('path')
     }
 
     const cell = this.cells[row][column]
