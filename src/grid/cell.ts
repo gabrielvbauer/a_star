@@ -1,6 +1,6 @@
 import { Graphics, Text } from "pixi.js"
 
-type CellType = 'path' | 'origin' | 'destination' | 'wall' | 'recharger'
+type CellType = 'default' | 'origin' | 'destination' | 'wall' | 'recharger' | 'checkedPath' | 'path'
 
 type CellConstructor = {
   cellWidth: number
@@ -22,7 +22,7 @@ export class Cell extends Graphics {
   cellHeight: number
   border: number
   index: [number, number]
-  type?: CellType = 'path'
+  type?: CellType = 'default'
 
   constructor({cellWidth, cellHeight, border, row, column}: CellConstructor) {
     super()
@@ -80,7 +80,7 @@ export class Cell extends Graphics {
   }
 
   private changeType() {
-    if (this.type === 'path') {
+    if (this.type === 'default') {
       this.changeTypeTo('origin')
       return;
     }
@@ -101,7 +101,7 @@ export class Cell extends Graphics {
     }
 
     if (this.type === 'recharger') {
-      this.changeTypeTo('path')
+      this.changeTypeTo('default')
       return;
     }
   }
@@ -137,7 +137,21 @@ export class Cell extends Graphics {
         })
         this.changeTextColor(0x000000)
         break;
+      case 'checkedPath':
+        this.createCell({
+          color: 0xff00ff,
+          alpha: 0.5
+        })
+        this.changeTextColor(0xffffff)
+        break;
       case 'path':
+        this.createCell({
+          color: 0xff00ff,
+          alpha: 1
+        })
+        this.changeTextColor(0xffffff)
+        break;
+      case 'default':
       default:
         this.createCell()
         this.changeTextColor(0xffffff)

@@ -1,5 +1,6 @@
 import { Application } from "pixi.js"
 import { Cell } from "./cell"
+import { AStar } from "../pathfinding/a-star"
 
 export class Grid {
   app: Application
@@ -12,7 +13,10 @@ export class Grid {
   constructor(app: Application) {
     this.app = app;
     this.generateGrid()
-
+    this.defineOriginCell({row: 1, column: 3})
+    this.defineDestinationCell({row: 5, column: 16})
+    const aStar = new AStar(this)
+    aStar.findBestPath()
   }
 
   private generateGrid() {
@@ -68,5 +72,15 @@ export class Grid {
     const cell = this.cells[row][column]
     cell.changeTypeTo('destination')
     this.destinationCell = cell
+  }
+
+  public getOriginCell() {
+    const flatten = this.cells.flat()
+    return flatten.find(cell => cell.type === 'origin')
+  }
+
+  public getDestinationCell() {
+    const flatten = this.cells.flat()
+    return flatten.find(cell => cell.type === 'destination')
   }
 }
