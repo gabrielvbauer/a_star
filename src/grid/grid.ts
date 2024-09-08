@@ -1,6 +1,5 @@
 import { Application } from "pixi.js"
 import { Cell } from "./cell"
-import { AStar } from "../pathfinding/a-star"
 
 export class Grid {
   app: Application
@@ -15,10 +14,6 @@ export class Grid {
     this.generateGrid()
     this.defineOriginCell({row: 1, column: 3})
     this.defineDestinationCell({row: 5, column: 16})
-    const aStar = new AStar(this)
-    aStar.findBestPath({
-      includeColateralDirections: true
-    })
   }
 
   private generateGrid() {
