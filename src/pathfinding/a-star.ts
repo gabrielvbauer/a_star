@@ -1,7 +1,13 @@
+import { Cell } from "../grid/cell";
 import { Grid } from "../grid/grid";
+
+interface FindBestPathConfigs {
+  includeColateralDirections: boolean
+}
 
 type Directions = {
   direction: string
+  type: 'cardeal' | 'colateral'
   moveTo: {
     row: number,
     column: number
@@ -11,6 +17,7 @@ type Directions = {
 type Node = {
   row: number
   column: number
+  type: 'origin' | 'destination' | 'path'
   amountOfOperations: number
   distanceFromDestination: number
   cost: number
@@ -23,37 +30,12 @@ export class AStar {
     this.grid = grid;
   }
 
-  findBestPath() {
-    const directions: Directions[] = [
-      {
-        direction: "N",
-        moveTo: {
-          row: -1,
-          column: 0
-        }
-      },
-      {
-        direction: "S",
-        moveTo: {
-          row: 1,
-          column: 0
-        }
-      },
-      {
-        direction: "L",
-        moveTo: {
-          row: 0,
-          column: 1
-        }
-      },
-      {
-        direction: "O",
-        moveTo: {
-          row: 0,
-          column: -1
-        }
-      }
-    ]
+  findBestPath({
+    includeColateralDirections = false
+  }: FindBestPathConfigs) {
+    const directions = this.createDirections({
+      includeColateralDirections
+    });
 
     const originCell = this.grid.getOriginCell()
     const destinationCell = this.grid.getDestinationCell()
@@ -64,70 +46,32 @@ export class AStar {
 
     const pathTaken: Node[] = []
 
-    const initialDistance = this.calculateDistanceBetweenPoints({
-      xA: destinationCell.index[0],
-      yA: destinationCell.index[1],
-      xB: originCell.index[0],
-      yB: originCell.index[1]
+    let currentNode = this.createRootNode({
+      originCell,
+      destinationCell
     })
+    pathTaken.push(currentNode)
 
-    let currentNode: Node = {
-      row: originCell.index[0],
-      column: originCell.index[1],
-      amountOfOperations: 0,
-      distanceFromDestination: initialDistance,
-      cost: initialDistance
-    }
-    while(currentNode.distanceFromDestination !== 0) {
-      const newNodes = directions.map(direction => {
-        const newRow = currentNode.row + direction.moveTo.row
-        const newColumn = currentNode.column + direction.moveTo.column
-        const hasCellAlreadyBeenVisited = pathTaken.find((path) => (
-          path.row === newRow && path.column === newColumn
-        ))
-        const isInsideRowsGrid = newRow >= 0 && newRow < this.grid.rows
-        const isInsideColumnsGrid = newColumn >= 0 && newColumn < this.grid.columns
+    while (currentNode.distanceFromDestination !== 0) {
+      const newNodes = directions.map(direction => (
+        this.createNewNode({
+          row: direction.moveTo.row,
+          column: direction.moveTo.column,
+          currentNode,
+          pathTaken,
+          destinationCell
+        })
+      )).filter(newNode => newNode !== undefined)
 
-        if (isInsideRowsGrid && isInsideColumnsGrid && !hasCellAlreadyBeenVisited) {
-          const amountOfOperations = currentNode.amountOfOperations + 1
-          const distanceFromDestination = this.calculateDistanceBetweenPoints({
-            xA: destinationCell.index[0],
-            yA: destinationCell.index[1],
-            xB: newRow,
-            yB: newColumn
-          })
-          const cost = amountOfOperations + distanceFromDestination
-
-          const newNode: Node = {
-            row: newRow,
-            column: newColumn,
-            amountOfOperations,
-            distanceFromDestination,
-            cost
-          }
-
-          
-          this.grid.cells[newNode.row][newNode.column].changeTypeTo('checkedPath')
-
-          return newNode
-        }
-      }).filter(newNode => newNode !== undefined)
-
-      let bestNode = newNodes[0]
-      newNodes.forEach(newNode => {
-        if (newNode.cost < bestNode.cost) {
-          bestNode = newNode
-        }
+      const bestNode = this.getBestNodeInTree({
+        tree: newNodes
       })
 
       currentNode = bestNode
       pathTaken.push(bestNode)
-      console.log(bestNode)
     }
 
-    pathTaken.forEach((path) => (
-      this.grid.cells[path.row][path.column].changeTypeTo('path')
-    ))
+    this.colorizePathTaken({pathTaken})
   }
 
   calculateDistanceBetweenPoints({
@@ -141,6 +85,184 @@ export class AStar {
     const deltaA = Math.pow(xB - xA, 2)
     const deltaB = Math.pow(yB - yA, 2)
     return Math.sqrt(deltaA + deltaB)
+  }
+
+  private createRootNode({
+    originCell,
+    destinationCell
+  }: {
+    originCell: Cell,
+    destinationCell: Cell
+  }): Node {
+    const initialDistance = this.calculateDistanceBetweenPoints({
+      xA: destinationCell.index[0],
+      yA: destinationCell.index[1],
+      xB: originCell.index[0],
+      yB: originCell.index[1]
+    })
+
+    return {
+      row: originCell.index[0],
+      column: originCell.index[1],
+      type: 'origin',
+      amountOfOperations: 0,
+      distanceFromDestination: initialDistance,
+      cost: initialDistance
+    }
+  }
+
+  private createNewNode({
+    row,
+    column,
+    currentNode,
+    pathTaken,
+    destinationCell
+  }: {
+    row: number,
+    column: number,
+    currentNode: Node,
+    pathTaken: Node[],
+    destinationCell: Cell
+  }): Node | undefined {
+    const newRow = currentNode.row + row
+    const newColumn = currentNode.column + column
+
+    const isInsideRowsGrid = newRow >= 0 && newRow < this.grid.rows
+    const isInsideColumnsGrid = newColumn >= 0 && newColumn < this.grid.columns
+    const hasCellAlreadyBeenVisited = pathTaken.find((path) => (
+      path.row === newRow && path.column === newColumn
+    ))
+
+    if (isInsideRowsGrid && isInsideColumnsGrid && !hasCellAlreadyBeenVisited) {
+      const amountOfOperations = currentNode.amountOfOperations + 1
+      const distanceFromDestination = this.calculateDistanceBetweenPoints({
+        xA: destinationCell.index[0],
+        yA: destinationCell.index[1],
+        xB: newRow,
+        yB: newColumn
+      })
+      const cost = amountOfOperations + distanceFromDestination
+
+      const newNode: Node = {
+        row: newRow,
+        column: newColumn,
+        type: distanceFromDestination === 0 ? 'destination' : 'path',
+        amountOfOperations,
+        distanceFromDestination,
+        cost
+      }
+
+      if (distanceFromDestination !== 0) {
+        this.grid.cells[newNode.row][newNode.column].changeTypeTo('checkedPath')
+      }
+
+      return newNode
+    }
+  }
+
+  private getBestNodeInTree({
+    tree
+  } : {
+    tree: Node[]
+  }): Node {
+    let bestNode = tree[0]
+    tree.forEach(newNode => {
+      if (newNode.cost < bestNode.cost) {
+        bestNode = newNode
+      }
+    })
+    return bestNode
+  }
+
+  private colorizePathTaken({
+    pathTaken
+  }: {
+    pathTaken: Node[]
+  }) {
+    pathTaken.filter((path) => (
+      path.type === 'path'
+    )).forEach((path) => (
+      this.grid.cells[path.row][path.column].changeTypeTo('path')
+    ))
+  }
+
+  private createDirections({
+    includeColateralDirections
+  }: {
+    includeColateralDirections: boolean
+  }) {
+    let directions: Directions[] = [
+      {
+        direction: "N",
+        type: 'cardeal',
+        moveTo: {
+          row: -1,
+          column: 0
+        }
+      },
+      {
+        direction: "NO",
+        type: 'colateral',
+        moveTo: {
+          row: -1,
+          column: -1
+        }
+      },
+      {
+        direction: "O",
+        type: 'cardeal',
+        moveTo: {
+          row: 0,
+          column: -1
+        }
+      },
+      {
+        direction: "SO",
+        type: 'colateral',
+        moveTo: {
+          row: 1,
+          column: -1,
+        }
+      },
+      {
+        direction: "S",
+        type: 'cardeal',
+        moveTo: {
+          row: 1,
+          column: 0
+        }
+      },
+      {
+        direction: 'SE',
+        type: 'colateral',
+        moveTo: {
+          row: 1,
+          column: 1
+        }
+      },
+      {
+        direction: "L",
+        type: 'cardeal',
+        moveTo: {
+          row: 0,
+          column: 1
+        }
+      },
+      {
+        direction: "NE",
+        type: 'colateral',
+        moveTo: {
+          row: -1,
+          column: 1
+        }
+      }
+    ]
+
+    if (!includeColateralDirections) {
+      directions = directions.filter((direction) => direction.type !== 'colateral')
+    }
+
+    return directions
   }
 }
 

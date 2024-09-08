@@ -16,7 +16,9 @@ export class Grid {
     this.defineOriginCell({row: 1, column: 3})
     this.defineDestinationCell({row: 5, column: 16})
     const aStar = new AStar(this)
-    aStar.findBestPath()
+    aStar.findBestPath({
+      includeColateralDirections: true
+    })
   }
 
   private generateGrid() {
