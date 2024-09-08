@@ -21,7 +21,7 @@ export class Grid {
       this.cells[i] = []
 
       for (let j = 0; j < this.columns; j++) {
-        const width = (window.innerWidth / this.columns)
+        const width = ((window.innerWidth - 360) / this.columns)
         const height = (window.innerHeight / this.rows)
 
         const cell = new Cell({

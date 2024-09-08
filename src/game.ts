@@ -12,15 +12,12 @@ export class Game {
     const grid = new Grid(app)
     this.grid = grid
     const aStar = new AStar(grid)
-    aStar.findBestPath({
-      includeColateralDirections: true
-    })
   }
 
   public async start() {
     await this.app.init({
-      resizeTo: window
+      width: window.innerWidth - 360,
+      height: window.innerHeight
     })
-    this.app.canvas.style.position = 'absolute'
   }
 }
