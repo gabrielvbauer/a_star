@@ -11,7 +11,10 @@ export class Game {
     this.app = app;
     const grid = new Grid(app)
     this.grid = grid
-    const aStar = new AStar(grid)
+    AStar.getInstance(grid)
+    // aStar.findBestPath({
+    //   includeColateralDirections: true
+    // })
   }
 
   public async start() {

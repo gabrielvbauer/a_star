@@ -24,10 +24,18 @@ type Node = {
 }
 
 export class AStar {
+  private static instance: AStar
   grid: Grid
 
   constructor(grid: Grid) {
     this.grid = grid;
+  }
+
+  public static getInstance(grid?: Grid): AStar {
+    if (!AStar.instance && grid) {
+      AStar.instance = new AStar(grid)
+    }
+    return AStar.instance
   }
 
   findBestPath({
