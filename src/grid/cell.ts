@@ -47,11 +47,11 @@ export class Cell extends Graphics {
       this.cellWidth,
       this.cellHeight
     ).fill({
-      color: props?.color ?? 0xffffff,
+      color: props?.color ?? 0x4f4f4f,
       alpha: props?.alpha ?? 0.5
     }).stroke({
       width: this.border,
-      color: props?.strokeColor ?? 0xffea00
+      color: props?.strokeColor ?? 0x4f4f4f
     })
     this.x = this.cellWidth * this.index[1]
     this.y = this.cellHeight * this.index[0]

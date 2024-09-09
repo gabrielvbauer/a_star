@@ -1,28 +1,56 @@
 import { Application } from "pixi.js"
 import { Cell } from "./cell"
 
+interface GenerateGridProps {
+  rows: number
+  columns: number
+}
+
 export class Grid {
+  private static instance: Grid
   app: Application
-  rows: number = 10
-  columns: number = Math.trunc(this.rows * (16/9))
+  rows: number = 0
+  columns: number = 0
   cells: Cell[][] = []
   originCell: Cell | undefined = undefined
   destinationCell: Cell | undefined = undefined
 
   constructor(app: Application) {
     this.app = app;
-    this.generateGrid()
-    this.defineOriginCell({row: 1, column: 3})
-    this.defineDestinationCell({row: 5, column: 16})
+    const rows = 10
+    const columns = Math.trunc(rows * (16/9))
+    this.generateGrid({
+      rows,
+      columns 
+    })
+    this.rows = rows
+    this.columns = columns
+    Grid.instance = this
+  }
+  
+  public setRows(rows: number) {
+    this.rows = rows
   }
 
-  private generateGrid() {
-    for (let i = 0; i < this.rows; i++) {
+  public setColumns(columns: number) {
+    this.columns = columns
+  }
+
+  public static getInstance(): Grid {
+    return Grid.instance;
+  }
+
+  public generateGrid({
+    rows,
+    columns
+  }: GenerateGridProps) {
+    this.app.stage.removeChildren()
+    for (let i = 0; i < rows; i++) {
       this.cells[i] = []
 
-      for (let j = 0; j < this.columns; j++) {
-        const width = ((window.innerWidth - 360) / this.columns)
-        const height = (window.innerHeight / this.rows)
+      for (let j = 0; j < columns; j++) {
+        const width = ((window.innerWidth - 360) / columns)
+        const height = (window.innerHeight / rows)
 
         const cell = new Cell({
           cellWidth: width,

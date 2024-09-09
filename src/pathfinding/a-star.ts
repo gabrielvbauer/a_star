@@ -38,7 +38,7 @@ export class AStar {
     return AStar.instance
   }
 
-  findBestPath({
+  async findBestPath({
     includeColateralDirections = false
   }: FindBestPathConfigs) {
     const directions = this.createDirections({
@@ -61,6 +61,8 @@ export class AStar {
     pathTaken.push(currentNode)
 
     while (currentNode.distanceFromDestination !== 0) {
+      // await new Promise(resolve => setTimeout(resolve, 500))
+
       const newNodes = directions.map(direction => (
         this.createNewNode({
           row: direction.moveTo.row,
@@ -71,12 +73,18 @@ export class AStar {
         })
       )).filter(newNode => newNode !== undefined)
 
+      console.log(newNodes)
+
       const bestNode = this.getBestNodeInTree({
         tree: newNodes
       })
 
       currentNode = bestNode
       pathTaken.push(bestNode)
+      // await new Promise(resolve => setTimeout(resolve, 500))
+      if (bestNode.type != 'destination') {
+        this.colorizeBestNode(bestNode)
+      }
     }
 
     this.colorizePathTaken({pathTaken})
@@ -180,6 +188,10 @@ export class AStar {
       }
     })
     return bestNode
+  }
+
+  colorizeBestNode(node: Node) {
+    this.grid.cells[node.row][node.column].changeTypeTo('path')
   }
 
   private colorizePathTaken({
