@@ -21,6 +21,7 @@ type Node = {
   amountOfOperations: number
   distanceFromDestination: number
   cost: number
+  parent: Node | null
 }
 
 export class AStar {
@@ -52,42 +53,55 @@ export class AStar {
       return
     }
 
-    const pathTaken: Node[] = []
+    const listToExplore: Node[] = []
+    const listExplored: Node[] = []
 
     let currentNode = this.createRootNode({
       originCell,
       destinationCell
     })
-    pathTaken.push(currentNode)
+    listToExplore.push(currentNode)
 
-    while (currentNode.distanceFromDestination !== 0) {
-      // await new Promise(resolve => setTimeout(resolve, 500))
+    while (listToExplore.length > 0) {
+      await new Promise(resolve => setTimeout(resolve, 100))
+      currentNode = this.getBestNodeInTree({
+        tree: listToExplore
+      })
+
+      if (currentNode.distanceFromDestination === 0) {
+        this.colorizeExploredNodes(listExplored.concat(currentNode))
+        this.colorizePathTaken({ finalNode: currentNode })
+        return;
+      }
+
+      listToExplore.splice(listToExplore.indexOf(currentNode), 1)
+      listExplored.push(currentNode)
 
       const newNodes = directions.map(direction => (
         this.createNewNode({
           row: direction.moveTo.row,
           column: direction.moveTo.column,
           currentNode,
-          pathTaken,
+          pathTaken: listExplored,
           destinationCell
         })
       )).filter(newNode => newNode !== undefined)
 
-      console.log(newNodes)
+      newNodes.forEach(newNode => {
+        const nodeInListToExplore = listToExplore.find(node => {
+          return node.row === newNode.row && node.column === newNode.column
+        })
+        const nodeInListExplored = listExplored.find(node => {
+          return node.row === newNode.row && node.column === newNode.column
+        })
 
-      const bestNode = this.getBestNodeInTree({
-        tree: newNodes
+        if (!nodeInListToExplore && !nodeInListExplored) {
+          listToExplore.push(newNode)
+        } else if (nodeInListToExplore && newNode.cost < nodeInListToExplore.cost) {
+          nodeInListToExplore.cost = newNode.cost
+        }
       })
-
-      currentNode = bestNode
-      pathTaken.push(bestNode)
-      // await new Promise(resolve => setTimeout(resolve, 500))
-      if (bestNode.type != 'destination') {
-        this.colorizeBestNode(bestNode)
-      }
     }
-
-    this.colorizePathTaken({pathTaken})
   }
 
   calculateDistanceBetweenPoints({
@@ -123,7 +137,8 @@ export class AStar {
       type: 'origin',
       amountOfOperations: 0,
       distanceFromDestination: initialDistance,
-      cost: initialDistance
+      cost: initialDistance,
+      parent: null
     }
   }
 
@@ -143,13 +158,29 @@ export class AStar {
     const newRow = currentNode.row + row
     const newColumn = currentNode.column + column
 
+    const cellBeingChecked = this.grid.getCell({
+      row: newRow,
+      column: newColumn
+    })
+
+    if (!cellBeingChecked) {
+      return
+    }
+
     const isInsideRowsGrid = newRow >= 0 && newRow < this.grid.rows
     const isInsideColumnsGrid = newColumn >= 0 && newColumn < this.grid.columns
     const hasCellAlreadyBeenVisited = pathTaken.find((path) => (
       path.row === newRow && path.column === newColumn
     ))
 
-    if (isInsideRowsGrid && isInsideColumnsGrid && !hasCellAlreadyBeenVisited) {
+    const isCellNotBlocked = cellBeingChecked.type !== 'wall'
+
+    if (
+      isInsideRowsGrid &&
+      isInsideColumnsGrid &&
+      !hasCellAlreadyBeenVisited &&
+      isCellNotBlocked
+    ) {
       const amountOfOperations = currentNode.amountOfOperations + 1
       const distanceFromDestination = this.calculateDistanceBetweenPoints({
         xA: destinationCell.index[0],
@@ -165,7 +196,8 @@ export class AStar {
         type: distanceFromDestination === 0 ? 'destination' : 'path',
         amountOfOperations,
         distanceFromDestination,
-        cost
+        cost,
+        parent: currentNode
       }
 
       if (distanceFromDestination !== 0) {
@@ -178,32 +210,42 @@ export class AStar {
 
   private getBestNodeInTree({
     tree
-  } : {
+  }: {
     tree: Node[]
   }): Node {
     let bestNode = tree[0]
-    tree.forEach(newNode => {
-      if (newNode.cost < bestNode.cost) {
-        bestNode = newNode
+    tree.forEach(node => {
+      if (node.cost < bestNode.cost) {
+        bestNode = node
       }
     })
     return bestNode
   }
 
-  colorizeBestNode(node: Node) {
-    this.grid.cells[node.row][node.column].changeTypeTo('path')
+  private async colorizePathTaken({
+    finalNode
+  }: {
+    finalNode: Node
+  }) {
+    let currentNode: Node | null = finalNode
+
+    while (currentNode) {
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      if (currentNode.type === 'path') {
+        this.grid.cells[currentNode.row][currentNode.column].changeTypeTo('path')
+      }
+
+      currentNode = currentNode.parent
+    }
   }
 
-  private colorizePathTaken({
-    pathTaken
-  }: {
-    pathTaken: Node[]
-  }) {
-    pathTaken.filter((path) => (
-      path.type === 'path'
-    )).forEach((path) => (
-      this.grid.cells[path.row][path.column].changeTypeTo('path')
-    ))
+  private colorizeExploredNodes(exploredNodes: Node[]) {
+    exploredNodes.filter(node => {
+      return node.type !== 'origin' && node.type !== 'destination'
+    }).forEach(node => {
+      this.grid.cells[node.row][node.column].changeTypeTo('explored')
+    })
   }
 
   private createDirections({

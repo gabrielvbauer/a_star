@@ -1,6 +1,6 @@
 import { Graphics, Text } from "pixi.js"
 
-type CellType = 'default' | 'origin' | 'destination' | 'wall' | 'recharger' | 'checkedPath' | 'path'
+type CellType = 'default' | 'origin' | 'destination' | 'wall' | 'recharger' | 'checkedPath' | 'path' | 'explored'
 
 type CellConstructor = {
   cellWidth: number
@@ -140,7 +140,7 @@ export class Cell extends Graphics {
       case 'checkedPath':
         this.createCell({
           color: 0xff00ff,
-          alpha: 0.5
+          alpha: 0.3
         })
         this.changeTextColor(0xffffff)
         break;
@@ -148,6 +148,13 @@ export class Cell extends Graphics {
         this.createCell({
           color: 0xff00ff,
           alpha: 1
+        })
+        this.changeTextColor(0xffffff)
+        break;
+      case 'explored':
+        this.createCell({
+          color: 0xff00ff,
+          alpha: 0.6
         })
         this.changeTextColor(0xffffff)
         break;

@@ -26,6 +26,22 @@ export class Grid {
     this.rows = rows
     this.columns = columns
     Grid.instance = this
+    this.defineOriginCell({row: 3, column: 0})
+    this.defineDestinationCell({row: 6, column: 16})
+    this.defineWallCells({row: 3, column: 2})
+    this.defineWallCells({row: 4, column: 2})
+    this.defineWallCells({row: 5, column: 2})
+    this.defineWallCells({row: 6, column: 3})
+    this.defineWallCells({row: 7, column: 4})
+    this.defineWallCells({row: 7, column: 5})
+    this.defineWallCells({row: 6, column: 5})
+    this.defineWallCells({row: 5, column: 5})
+    this.defineWallCells({row: 4, column: 7})
+    this.defineWallCells({row: 5, column: 7})
+    this.defineWallCells({row: 6, column: 7})
+    this.defineWallCells({row: 7, column: 7})
+    this.defineWallCells({row: 8, column: 7})
+    this.defineWallCells({row: 9, column: 7})
   }
   
   public setRows(rows: number) {
@@ -99,6 +115,17 @@ export class Grid {
     this.destinationCell = cell
   }
 
+  public defineWallCells({
+    row,
+    column
+  }: {
+    row: number,
+    column: number
+  }) {
+    const cell = this.cells[row][column]
+    cell.changeTypeTo('wall')
+  }
+
   public getOriginCell() {
     const flatten = this.cells.flat()
     return flatten.find(cell => cell.type === 'origin')
@@ -107,5 +134,15 @@ export class Grid {
   public getDestinationCell() {
     const flatten = this.cells.flat()
     return flatten.find(cell => cell.type === 'destination')
+  }
+
+  public getCell({
+    row,
+    column
+  }: {
+    row: number,
+    column: number
+  }) {
+    return this.cells[row][column]
   }
 }
