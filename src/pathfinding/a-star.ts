@@ -1,8 +1,13 @@
 import { Cell } from "../grid/cell";
 import { Grid } from "../grid/grid";
+import { delay } from "../utils/delay";
 
 interface FindBestPathConfigs {
   includeColateralDirections: boolean
+  animate?: boolean
+  duration?: number
+  showValidatedCells?: boolean
+  showExpandedCells?: boolean
 }
 
 type Directions = {
@@ -40,7 +45,11 @@ export class AStar {
   }
 
   async findBestPath({
-    includeColateralDirections = false
+    includeColateralDirections = false,
+    animate = false,
+    duration = 100,
+    showExpandedCells,
+    showValidatedCells
   }: FindBestPathConfigs) {
     const directions = this.createDirections({
       includeColateralDirections
@@ -63,14 +72,15 @@ export class AStar {
     listToExplore.push(currentNode)
 
     while (listToExplore.length > 0) {
-      await new Promise(resolve => setTimeout(resolve, 100))
+      if (animate) await delay({ duration })
+
       currentNode = this.getBestNodeInTree({
         tree: listToExplore
       })
 
       if (currentNode.distanceFromDestination === 0) {
-        this.colorizeExploredNodes(listExplored.concat(currentNode))
-        this.colorizePathTaken({ finalNode: currentNode })
+        if (showExpandedCells) this.colorizeExploredNodes(listExplored.concat(currentNode))
+        this.colorizePathTaken({ finalNode: currentNode, animate, duration })
         return;
       }
 
@@ -82,10 +92,11 @@ export class AStar {
           row: direction.moveTo.row,
           column: direction.moveTo.column,
           currentNode,
-          pathTaken: listExplored,
           destinationCell
         })
       )).filter(newNode => newNode !== undefined)
+
+      if (showValidatedCells) this.colorizeValidatedNodes(newNodes)
 
       newNodes.forEach(newNode => {
         const nodeInListToExplore = listToExplore.find(node => {
@@ -146,13 +157,11 @@ export class AStar {
     row,
     column,
     currentNode,
-    pathTaken,
     destinationCell
   }: {
     row: number,
     column: number,
     currentNode: Node,
-    pathTaken: Node[],
     destinationCell: Cell
   }): Node | undefined {
     const newRow = currentNode.row + row
@@ -169,17 +178,15 @@ export class AStar {
 
     const isInsideRowsGrid = newRow >= 0 && newRow < this.grid.rows
     const isInsideColumnsGrid = newColumn >= 0 && newColumn < this.grid.columns
-    const hasCellAlreadyBeenVisited = pathTaken.find((path) => (
-      path.row === newRow && path.column === newColumn
-    ))
 
     const isCellNotBlocked = cellBeingChecked.type !== 'wall'
+    const isCellNotOrigin = cellBeingChecked.type !== 'origin'
 
     if (
       isInsideRowsGrid &&
       isInsideColumnsGrid &&
-      !hasCellAlreadyBeenVisited &&
-      isCellNotBlocked
+      isCellNotBlocked &&
+      isCellNotOrigin
     ) {
       const amountOfOperations = currentNode.amountOfOperations + 1
       const distanceFromDestination = this.calculateDistanceBetweenPoints({
@@ -200,9 +207,15 @@ export class AStar {
         parent: currentNode
       }
 
-      if (distanceFromDestination !== 0) {
-        this.grid.cells[newNode.row][newNode.column].changeTypeTo('checkedPath')
-      }
+      cellBeingChecked.setOperationsText({
+        text: amountOfOperations.toFixed(2).toString(),
+      })
+      cellBeingChecked.setDistanceText({
+        text: distanceFromDestination.toFixed(2).toString(),
+      })
+      cellBeingChecked.setCostText({
+        text: cost.toFixed(2).toString(),
+      })
 
       return newNode
     }
@@ -223,14 +236,18 @@ export class AStar {
   }
 
   private async colorizePathTaken({
-    finalNode
+    finalNode,
+    animate = false,
+    duration = 100
   }: {
     finalNode: Node
+    animate?: boolean
+    duration?: number
   }) {
     let currentNode: Node | null = finalNode
 
     while (currentNode) {
-      await new Promise(resolve => setTimeout(resolve, 100))
+      if (animate) await delay({ duration })
 
       if (currentNode.type === 'path') {
         this.grid.cells[currentNode.row][currentNode.column].changeTypeTo('path')
@@ -238,6 +255,14 @@ export class AStar {
 
       currentNode = currentNode.parent
     }
+  }
+
+  private colorizeValidatedNodes(validatedNodes: Node[]) {
+    validatedNodes.filter(node => {
+      return node.type !== 'origin' && node.type !== 'destination'
+    }).forEach(node => {
+      this.grid.cells[node.row][node.column].changeTypeTo('checkedPath')
+    })
   }
 
   private colorizeExploredNodes(exploredNodes: Node[]) {

@@ -4,6 +4,10 @@
   box-sizing: border-box
 }
 
+label {
+  font-family: monospace;
+}
+
 #append-game-container {
   display: flex;
 }

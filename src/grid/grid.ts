@@ -1,5 +1,6 @@
 import { Application } from "pixi.js"
 import { Cell } from "./cell"
+import { PossibleCellTypes } from "../ui/components/cell-type-switch"
 
 interface GenerateGridProps {
   rows: number
@@ -14,6 +15,7 @@ export class Grid {
   cells: Cell[][] = []
   originCell: Cell | undefined = undefined
   destinationCell: Cell | undefined = undefined
+  selectedType: PossibleCellTypes = 'default';
 
   constructor(app: Application) {
     this.app = app;
@@ -26,22 +28,6 @@ export class Grid {
     this.rows = rows
     this.columns = columns
     Grid.instance = this
-    this.defineOriginCell({row: 3, column: 0})
-    this.defineDestinationCell({row: 6, column: 16})
-    this.defineWallCells({row: 3, column: 2})
-    this.defineWallCells({row: 4, column: 2})
-    this.defineWallCells({row: 5, column: 2})
-    this.defineWallCells({row: 6, column: 3})
-    this.defineWallCells({row: 7, column: 4})
-    this.defineWallCells({row: 7, column: 5})
-    this.defineWallCells({row: 6, column: 5})
-    this.defineWallCells({row: 5, column: 5})
-    this.defineWallCells({row: 4, column: 7})
-    this.defineWallCells({row: 5, column: 7})
-    this.defineWallCells({row: 6, column: 7})
-    this.defineWallCells({row: 7, column: 7})
-    this.defineWallCells({row: 8, column: 7})
-    this.defineWallCells({row: 9, column: 7})
   }
   
   public setRows(rows: number) {
@@ -73,7 +59,8 @@ export class Grid {
           cellHeight: height,
           border: 2,
           row: i,
-          column: j
+          column: j,
+          onChangeCellType: this.changeCellType.bind(this)
         })
         this.cells[i].push(cell)
         this.app.stage.addChild(cell)
@@ -143,6 +130,53 @@ export class Grid {
     row: number,
     column: number
   }) {
-    return this.cells[row][column]
+    const cellsInRow = this.cells[row]
+    if (!cellsInRow) return null
+    return cellsInRow[column]
+  }
+  
+  public toggleCellsIndexes(show: boolean) {
+    const flattenedCells = this.cells.flat()
+    flattenedCells.forEach(cell => {
+      const cellIndexText = cell.getChildByLabel('index')
+      if (cellIndexText) {
+        cellIndexText.visible = show
+      }
+    })
+  }
+
+  public changeSelectedType(selectedType: PossibleCellTypes) {
+    this.selectedType = selectedType
+  }
+
+  private changeCellType(cell: Cell) {
+    if (!cell) {
+      return
+    }
+
+    cell.changeTypeTo(this.selectedType)
+  }
+  
+  public toggleCellsCalculations(show: boolean) {
+    const flattenedCells = this.cells.flat()
+    flattenedCells
+      .filter(cell => cell.type !== 'wall' && cell.type !== 'default')
+      .forEach(cell => {
+        const cellOperationsText = cell.getChildByLabel('operations')
+        if (cellOperationsText) {
+          cellOperationsText.visible = show
+        }
+
+        const cellDistanceText = cell.getChildByLabel('distance')
+        if (cellDistanceText) {
+          cellDistanceText.visible = show
+        }
+
+        const cellCostText = cell.getChildByLabel('cost')
+        if (cellCostText) {
+          cellCostText.visible = show
+        }
+      }
+    )
   }
 }

@@ -24,6 +24,7 @@ export const StartAlgorithmButton = styled.button`
   font-weight: 700;
   background-color: #9a11ff;
   cursor: pointer;
+  margin-top: auto;
 
   &:focus {
     outline-offset: 4px;
@@ -63,7 +64,7 @@ export const InputLabel = styled.label`
   display: block;
 `
 
-const Input = styled.input`
+export const Input = styled.input`
   width: 100%;
   height: 48px;
   padding-left: 16px;
@@ -78,5 +79,3 @@ const Input = styled.input`
     outline: 2px solid #9a11ff;
   }
 `
-
-export const GridSizeInput = styled(Input)``
